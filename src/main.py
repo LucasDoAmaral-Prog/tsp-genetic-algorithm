@@ -14,48 +14,66 @@ from src.visualization.evolution_plot import plot_evolution
 def main():
     """
     Ponto de entrada principal para o projeto evoTSP.
+    Configurado para Cenários Logísticos Reais.
     """
-    # Configuração de argumentos
     parser = argparse.ArgumentParser(description='Evolutionary TSP Solver (evoTSP)')
-    parser.add_argument('--dataset', type=str, default='berlin52.csv', 
+    
+    # --- CONFIGURAÇÕES PADRÃO ATUALIZADAS (Recomendação IA) ---
+    # Dataset padrão alterado para o de logística
+    parser.add_argument('--dataset', type=str, default='logistica_brasil.csv', 
                         help='Nome do arquivo CSV dentro da pasta datasets/')
-    parser.add_argument('--pop_size', type=int, default=100, help='Tamanho da população')
-    parser.add_argument('--generations', type=int, default=500, help='Número de gerações')
-    parser.add_argument('--mutation_rate', type=float, default=0.01, help='Taxa de mutação')
-    parser.add_argument('--crossover_rate', type=float, default=0.9, help='Taxa de crossover')
-    parser.add_argument('--elitism', action='store_true', default=True, help='Ativar elitismo')
+    
+    # Aumentado para 200 para garantir diversidade genética em mapas complexos
+    parser.add_argument('--pop_size', type=int, default=200, 
+                        help='Tamanho da população')
+    
+    # Aumentado para 2000. Para ~30 cidades, 500 é pouco. 2000 garante convergência.
+    parser.add_argument('--generations', type=int, default=2000, 
+                        help='Número de gerações')
+    
+    parser.add_argument('--mutation_rate', type=float, default=0.01, 
+                        help='Taxa de mutação')
+    
+    parser.add_argument('--crossover_rate', type=float, default=0.9, 
+                        help='Taxa de crossover')
+    
+    parser.add_argument('--elitism', action='store_true', default=True, 
+                        help='Ativar elitismo')
     
     args = parser.parse_args()
 
-    # Definição de diretórios
+    # Diretórios
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     dataset_path = os.path.join(base_dir, 'datasets', args.dataset)
     results_dir = os.path.join(base_dir, 'results')
     routes_dir = os.path.join(base_dir, 'routes')
 
-    # Cria diretórios se não existirem
     os.makedirs(results_dir, exist_ok=True)
     os.makedirs(routes_dir, exist_ok=True)
 
-    print("-" * 50)
-    print("🧬 evoTSP - Travelling Salesman Problem Solver")
-    print("-" * 50)
+    print("-" * 60)
+    print("🚛 evoTSP - Otimizador Logístico (Genetic Algorithm)")
+    print("-" * 60)
 
     # 1. Carregamento
     if not os.path.exists(dataset_path):
         print(f"❌ Erro: Dataset não encontrado em: {dataset_path}")
         return
 
-    print(f"📂 Carregando dataset: {args.dataset}...")
+    print(f"📂 Carregando malha logística: {args.dataset}...")
     loader = InstanceLoader(dataset_path)
     try:
         cities = loader.load_cities()
-        print(f"✅ {len(cities)} cidades carregadas.")
+        print(f"✅ {len(cities)} pontos de parada carregados.")
     except Exception as e:
         print(f"❌ Erro ao ler o dataset: {e}")
         return
 
     # 2. Configuração do AG
+    print("\n⚙️  Parâmetros da IA:")
+    print(f"   - População: {args.pop_size} indivíduos")
+    print(f"   - Gerações: {args.generations} ciclos evolutivos")
+    
     ga = GeneticAlgorithm(
         cities=cities,
         pop_size=args.pop_size,
@@ -65,50 +83,46 @@ def main():
     )
 
     # 3. Execução
-    print("\n🚀 Iniciando evolução...")
+    print("\n🚀 Calculando melhor rota de entrega...")
     best_route, history = ga.run(generations=args.generations)
 
-    # 4. Resultados no Console
-    print("\n🏆 Execução Finalizada!")
-    print(f"📏 Melhor Distância: {best_route.distance:.4f}")
+    # 4. Resultados
+    print("\n🏆 Otimização Concluída!")
+    print(f"🚚 Distância Total Estimada: {best_route.distance:.2f} km")
 
-    # 5. Salvando a Rota em Arquivo de Texto (Pasta routes/)
+    # 5. Salvando Rota
     dataset_name = os.path.splitext(args.dataset)[0]
-    solution_filename = os.path.join(routes_dir, f"{dataset_name}_solution.txt")
+    solution_filename = os.path.join(routes_dir, f"{dataset_name}_route.txt")
     
-    route_indices = [str(city.index) for city in best_route.cities]
-    # Fecha o ciclo adicionando o início ao fim para visualização
-    route_indices_closed = route_indices + [route_indices[0]]
+    route_names = [city.name for city in best_route.cities]
+    route_names_closed = route_names + [route_names[0]]
     
-    print(f"\n📝 Salvando solução em: {solution_filename}")
-    with open(solution_filename, 'w') as f:
-        f.write(f"Dataset: {args.dataset}\n")
-        f.write(f"Distancia Total: {best_route.distance:.4f}\n")
-        f.write(f"Geracoes: {args.generations}\n")
-        f.write("-" * 20 + "\n")
-        f.write("Ordem das Cidades:\n")
-        f.write(" -> ".join(route_indices_closed))
-        f.write("\n")
+    with open(solution_filename, 'w', encoding='utf-8') as f:
+        f.write(f"Malha Logística: {args.dataset}\n")
+        f.write(f"Distância Total: {best_route.distance:.2f} km\n")
+        f.write("-" * 30 + "\n")
+        f.write("SEQUÊNCIA DE ENTREGA SUGERIDA:\n")
+        for i, city_name in enumerate(route_names_closed):
+            f.write(f"{i+1}. {city_name}\n")
     
-    # Exibe prévia no console
-    print("   -> Rota: " + " -> ".join(route_indices_closed[:10]) + " ...")
+    print(f"📝 Manifesto de carga salvo em: {solution_filename}")
 
-    # 6. Gerando Gráficos (Pasta results/)
-    print("\n📊 Gerando gráficos...")
-    
-    # Gráfico 1: O Mapa da Rota
-    route_img_filename = os.path.join(results_dir, f"{dataset_name}_best_route.png")
-    plot_route(best_route, filename=route_img_filename, 
-               title=f"Melhor Rota ({dataset_name}) - Dist: {best_route.distance:.2f}")
-    print(f"   -> Mapa salvo em: {route_img_filename}")
+    # Exibe prévia
+    print("\n🗺️  Resumo do Itinerário:")
+    print(f"   Início: {route_names_closed[0]}")
+    print(f"   Passando por: {', '.join(route_names_closed[1:4])}...")
+    print(f"   Fim: {route_names_closed[-1]}")
 
-    # Gráfico 2: A Evolução (Convergência)
-    evolution_img_filename = os.path.join(results_dir, f"{dataset_name}_evolution.png")
-    plot_evolution(history, filename=evolution_img_filename, 
-                   title=f"Evolução da Fitness ({dataset_name})")
-    print(f"   -> Gráfico de evolução salvo em: {evolution_img_filename}")
+    # 6. Gráficos
+    print("\n📊 Gerando mapas e relatórios...")
     
-    print("\n✅ Processo concluído com sucesso.")
+    plot_route(best_route, filename=os.path.join(results_dir, f"{dataset_name}_map.png"), 
+               title=f"Rota Logística Otimizada - Total: {best_route.distance:.0f} km")
+
+    plot_evolution(history, filename=os.path.join(results_dir, f"{dataset_name}_convergence.png"), 
+                   title=f"Curva de Aprendizado da IA ({dataset_name})")
+    
+    print(f"✅ Mapas salvos na pasta 'results/'.")
 
 if __name__ == "__main__":
     main()

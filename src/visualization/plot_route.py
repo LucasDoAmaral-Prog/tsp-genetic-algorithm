@@ -3,25 +3,40 @@ from ..tsp.route import Route
 
 def plot_route(route: Route, filename: str = None, title: str = "Rota"):
     """
-    Plota a rota visualmente usando Matplotlib.
+    Plota a rota geográfica.
+    Eixo X = Longitude
+    Eixo Y = Latitude
     """
-    x = [city.x for city in route.cities]
-    y = [city.y for city in route.cities]
+    # Extrai coordenadas
+    lons = [city.lon for city in route.cities]
+    lats = [city.lat for city in route.cities]
     
-    # Adiciona a primeira cidade ao final para fechar o ciclo no gráfico
-    x.append(x[0])
-    y.append(y[0])
+    # Fecha o ciclo
+    lons.append(lons[0])
+    lats.append(lats[0])
 
     plt.figure(figsize=(10, 6))
-    plt.plot(x, y, 'co-', markersize=5, linewidth=1, alpha=0.7)
-    plt.plot(x[0], y[0], 'rs', markersize=8, label='Início/Fim')  # Destaca o início
     
+    # Plota a linha do trajeto
+    plt.plot(lons, lats, 'bo-', markersize=4, linewidth=1, alpha=0.7, label='Trajeto')
+    
+    # Destaca o início (Vermelho)
+    plt.plot(lons[0], lats[0], 'rs', markersize=8, label='Início')
+
+    # Adiciona nomes das cidades no gráfico
+    for city in route.cities:
+        plt.annotate(city.name, (city.lon, city.lat), 
+                     textcoords="offset points", xytext=(0,5), ha='center', fontsize=8)
+
     plt.title(title)
-    plt.xlabel("Coordenada X")
-    plt.ylabel("Coordenada Y")
+    plt.xlabel("Longitude (Graus)")
+    plt.ylabel("Latitude (Graus)")
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
     
+    # Ajusta proporção para não distorcer o mapa geograficamente
+    plt.axis('equal') 
+
     if filename:
         plt.savefig(filename)
         plt.close()

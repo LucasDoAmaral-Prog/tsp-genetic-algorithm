@@ -5,66 +5,56 @@ from .city import City
 
 class InstanceLoader:
     """
-    Responsável por carregar instâncias de problemas TSP a partir de arquivos.
+    Carregador Inteligente: Detecta automaticamente se o dataset
+    é Geográfico (Lat/Lon) ou Euclidiano (X/Y).
     """
     def __init__(self, file_path: str):
         self.file_path = file_path
 
     def load_cities(self) -> List[City]:
-        """
-        Lê o arquivo CSV e retorna uma lista de objetos City.
-        
-        Espera-se que o CSV tenha formato compatível (ex: id, x, y)
-        ou apenas as coordenadas.
-        """
         if not os.path.exists(self.file_path):
             raise FileNotFoundError(f"Arquivo não encontrado: {self.file_path}")
 
         try:
-            # Lê o CSV usando pandas
-            # Assume que o CSV pode ter cabeçalho ou não.
-            # Se tiver cabeçalho padrão (id, x, y), o pandas identifica.
-            # Espaços em branco são removidos dos nomes das colunas.
             df = pd.read_csv(self.file_path, skipinitialspace=True)
+            # Normaliza colunas
+            df.columns = [c.lower().strip() for c in df.columns]
+            cols = df.columns
             
             cities = []
             
-            # Itera sobre as linhas do DataFrame
-            # Verifica se as colunas necessárias existem pelo nome ou por índice
-            # Prioridade: colunas nomeadas 'x', 'y'
-            
-            cols = [c.lower() for c in df.columns]
-            
-            if 'x' in cols and 'y' in cols:
-                # Mapeamento pelo nome da coluna
-                for idx, row in df.iterrows():
-                    # Tenta obter ID, se não existir usa o índice do loop + 1
-                    city_id = row['id'] if 'id' in cols else (idx + 1)
-                    cities.append(City(
-                        index=int(city_id),
-                        x=float(row['x']),
-                        y=float(row['y'])
-                    ))
+            # DETECÇÃO DE MODO
+            is_geo = False
+            if 'lat' in cols or 'latitude' in cols:
+                is_geo = True
+                col_c1 = 'lat' if 'lat' in cols else 'latitude'
+                col_c2 = 'lon' if 'lon' in cols else ('lng' if 'lng' in cols else 'longitude')
+            elif 'x' in cols:
+                is_geo = False
+                col_c1 = 'x'
+                col_c2 = 'y'
             else:
-                # Fallback: assume ordem posicional (id, x, y) ou (x, y)
-                num_cols = df.shape[1]
-                for idx, row in df.iterrows():
-                    if num_cols >= 3:
-                        # Assume col 0: id, col 1: x, col 2: y
-                        cities.append(City(
-                            index=int(row.iloc[0]),
-                            x=float(row.iloc[1]),
-                            y=float(row.iloc[2])
-                        ))
-                    elif num_cols == 2:
-                        # Assume col 0: x, col 1: y (Gera ID sequencial)
-                        cities.append(City(
-                            index=idx + 1,
-                            x=float(row.iloc[0]),
-                            y=float(row.iloc[1])
-                        ))
-                    else:
-                        raise ValueError("Formato de colunas do CSV desconhecido.")
+                # Fallback para datasets sem cabeçalho padrão
+                # Assume X, Y se houver 3 colunas e nenhuma for lat
+                is_geo = False
+                df.rename(columns={df.columns[1]: 'x', df.columns[2]: 'y'}, inplace=True)
+                col_c1, col_c2 = 'x', 'y'
+
+            print(f"   -> Modo detectado: {'🌍 Geográfico (GPS)' if is_geo else '📐 Euclidiano (Plano)'}")
+
+            for idx, row in df.iterrows():
+                # Identificar Nome
+                if 'name' in cols: name = str(row['name'])
+                elif 'city' in cols: name = str(row['city'])
+                elif 'id' in cols: name = str(row['id'])
+                else: name = f"Ponto_{idx + 1}"
+
+                cities.append(City(
+                    name=name,
+                    c1=float(row[col_c1]),
+                    c2=float(row[col_c2]),
+                    is_geo=is_geo
+                ))
                         
             return cities
 
