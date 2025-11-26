@@ -54,33 +54,23 @@ py install -r requirements.txt
 python src/main.py --dataset logistica_brasil.csv
 ```
 ## 🧠 Como o Algoritmo Genético Funciona
-
+<ul>
 O GA segue os seguintes passos:
 
-Inicialização da população com rotas aleatórias
+<li>Inicialização da população com rotas aleatórias</li>
 
-Seleção (tournament selection)
+<li>Seleção (tournament selection)</li>
 
-Crossover entre pares de indivíduos
+<li>Crossover entre pares de indivíduos</li>
 
-Mutação controlada
+<li>Mutação controlada</li>
 
-Elitismo para manter o melhor indivíduo
+<li>Elitismo para manter o melhor indivíduo</li>
 
-Evolução por diversas gerações
+<li>Evolução por diversas gerações</li>
 
-Retorno da melhor rota encontrada
-
-Os parâmetros principais podem ser ajustados diretamente no main.py:
-```bash
-parameters = {
-    "population_size": 150,
-    "generations": 300,
-    "mutation_rate": 0.015,
-    "tournament_size": 5,
-    "elitism": True
-}
-```
+<li>Retorno da melhor rota encontrada</li>
+</ul>
 
 ## 📊 Resultados Gerados
 
@@ -114,3 +104,4 @@ Esses arquivos permitem visualizar:
 <li>Genetic Algorithms – Goldberg</li>
 <li>Documentação oficial do NumPy e Matplotlib</li>
 </ul>
+
