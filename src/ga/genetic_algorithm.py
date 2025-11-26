@@ -8,7 +8,7 @@ from .selection import tournament_selection
 from .crossover import ordered_crossover
 from .mutation import inversion_mutation
 
-class GeneticAlgorithm:
+class genetic_algorithm:
     def __init__(self, cities: List[City], pop_size: int = 100, 
                  mutation_rate: float = 0.01, crossover_rate: float = 0.9, 
                  elitism: bool = True):
